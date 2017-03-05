@@ -6,7 +6,7 @@ import cv2
 
 '''
     Stitch Function
-Usage:  Stitches the images together using the Stitcher class
+Usage:  Stitches the images together using the Stitcher class and crops final image
 Input:  imageA - some image
         imageB - some other image
         (images should interesect or function will not work)
@@ -20,7 +20,17 @@ def stitch(imageA,imageB):
 
     stitcher = Stitcher()
     (result, vis) = stitcher.stitch([imageA, imageB], showMatches=True)
-    return (imageA,imageB,result,vis)
+
+    #crop on blank space
+    img = result
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnt = contours[0]
+    x, y, w, h = cv2.boundingRect(cnt)
+    crop = img[y:y+h,x:x+w]
+
+    return (imageA,imageB,crop,vis)
 
 '''
     Write Function
