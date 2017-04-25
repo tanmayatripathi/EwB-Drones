@@ -1,0 +1,56 @@
+import math
+
+def getSlope(pointA,pointB):
+    # print(pointB[0],pointA[0])
+    if(pointB[0] == pointA[0]):
+        return None
+    return (pointB[1] - pointA[1])/(pointB[0] - pointA[0])
+
+def getIntersects(horizontal,line):
+    exes = (line[0][0],line[1][0])
+    ys = (line[0][1],line[1][1])
+    slope = getSlope(line[0],line[1])
+    if(slope == 0): return None
+    # print("SLOPE:",slope)
+    if(slope == None and
+           (horizontal < max(ys) and horizontal > min(ys))):
+        return (line[0][0],float(horizontal))
+    elif(slope == None and
+            not (horizontal < max(ys) and horizontal > min(ys))): return None
+    offset = line[0][1] - slope*line[0][0]
+    # print("OFFSET:",offset)
+    xPoint = (horizontal - offset)/slope
+    # print("X:",xPoint)
+    if(xPoint < max(exes) and xPoint > min(exes) and
+       horizontal < max(ys) and horizontal > min(ys)):
+        # print("Pass")
+        return (xPoint,float(horizontal))
+    return None
+
+def distance(pointA,pointB):
+    partA = (pointB[0]-pointA[0])**2
+    partB = (pointB[1]-pointA[1])**2
+    return (partA + partB)**(1/2)
+
+def getMaxFromCol(l, index):
+    col = []
+    for row in l: col.append(row[index])
+    return max(col)
+
+def getMinFromCol(l, index):
+    col = []
+    for row in l: col.append(row[index])
+    return min(col)
+
+def findHorizontals(coords, buffer):
+    maxY = getMaxFromCol(coords,1)
+    minY = getMinFromCol(coords,1)
+    dif = maxY - minY
+    #Some complicated shit to find closest distance to buffer
+    #numHorizontals = math.ciel(dif/buffer)
+    horizontals = [minY+buffer]
+    dif -= buffer
+    while (dif > buffer):
+        horizontals.append(horizontals[-1] + buffer)
+        dif -= buffer
+    return horizontals
