@@ -1,0 +1,166 @@
+from Tkinter import *
+from NavigationMain import *
+
+def init(data):
+    data.points = []
+    data.width = 800
+    data.height = 800
+    data.outlineColor = "#990033"
+    data.bgColor = "#666699"
+    data.bBgColor = "white"
+    data.shapeColor = "black"
+    data.gridColor = "grey"
+    data.gridPos = (0,0)
+    data.gridSpacing = 60
+    data.dBoxX = 20
+    data.dBoxY = 20
+    data.dBoxW = 760
+    data.dBoxH = 760
+    data.pointRad = 4
+    data.message = ""
+    data.coordinates = []
+    data.sliceButtX = 640
+    data.sliceButtY = 640
+    data.sliceButtW = 140
+    data.sliceButtH = 140
+    data.settingH = 125
+    data.settingW = 125
+    data.objHX = 40
+    data.objHY = 650
+    data.objHeight = 1.0
+    data.layerHX = 185
+    data.layerHY = 650
+    data.layerHeight = 0.2
+    data.bedHeight = 200
+    data.profileX = 650
+    data.profileY = 480
+    data.extrusionX = 330
+    data.extrusionY = 650
+    data.extrusion = 1
+    data.bufferX = 475
+    data.bufferY = 650
+    data.buffer = 1.4
+    data.splash = 0
+    data.help = 0
+    data.splashClickSize = 35
+    data.splashClickSizeDS = 1
+    data.horizontals = []
+
+def drawDBox(canvas,data):
+    canvas.create_rectangle(data.dBoxX,data.dBoxY,
+                                  data.dBoxX+data.dBoxW,
+                                  data.dBoxY+data.dBoxH,
+                                  outline=data.gridColor,width=2,
+                                  fill=data.bBgColor)
+    for lineX in range(data.gridSpacing,data.dBoxW,data.gridSpacing):
+        canvas.create_line(data.dBoxX+lineX, data.dBoxY,
+                           data.dBoxX+lineX, data.dBoxH+data.dBoxY,
+                           fill=data.gridColor, dash=(3,5))
+    for lineY in range(data.gridSpacing,data.dBoxH,data.gridSpacing):
+        canvas.create_line(data.dBoxX,data.dBoxY+lineY,
+                           data.dBoxW+data.dBoxX,data.dBoxX+lineY,
+                           fill=data.gridColor, dash=(3,5))
+
+def drawShape(canvas, data):
+    if(len(data.points) > 0):
+        canvas.create_polygon(data.points,fill=data.shapeColor,stipple = "gray25")
+        prevPoint=None
+        for point in data.points:
+            canvas.create_oval(point[0]-data.pointRad,point[1]-data.pointRad,
+                               point[0]+data.pointRad,point[1]+data.pointRad,
+                               fill=data.outlineColor)
+            if(prevPoint!=None):
+                canvas.create_line(prevPoint,point,fill=data.outlineColor)
+            prevPoint = point
+        canvas.create_line(data.points[0],data.points[-1],fill=data.outlineColor)
+
+#Modify everything that has to do with coordinates
+def createCoords(points):
+    coords = []
+    for point in points:
+        coord = ((point[0]-20)/3,(point[1]-20)/3)
+        coords.append(coord)
+    return coords
+
+def getPoints(coords):
+    points = []
+    for coord in coords:
+        point = ((coord[0]*3+20),(coord[1]*3+20))
+        points.append(point)
+    return points
+
+def pressedArea(event,x,y,h,w):
+    return(event.y > y and event.x > x and
+           event.y < y + h and event.x < x + w)
+
+def mousePressed(event, data):
+    if(data.splash == 0 and data.help == 0):
+        if(pressedArea(event,data.dBoxX,data.dBoxY,data.dBoxH,data.dBoxW)):
+            data.points.append((event.x,event.y))
+            data.coordinates = createCoords(data.points)
+
+    print("Coords: ",data.coordinates)
+    print("Points: ",data.points)
+
+def keyPressed(event, data):
+    if(data.splash == 0 and data.help == 0):
+        if(event.keysym == "Delete"):
+            data.points.pop()
+            data.coordinates.pop()
+
+def timerFired(data):
+    pass
+
+def redrawAll(canvas, data):
+    if(data.splash == 0 and data.help == 0):
+        canvas.create_rectangle(0,0,data.width+10,data.height+10,fill=data.bgColor)
+        drawDBox(canvas,data)
+        drawShape(canvas,data)
+        if len(data.points) > 2:
+            data.horizontals = findHorizontals(data.points, 20)
+            for hor in data.horizontals:
+                canvas.create_line(data.dBoxX, hor, data.dBoxX + data.dBoxW, hor)
+
+def run(width=300, height=300):
+    def redrawAllWrapper(canvas, data):
+        canvas.delete(ALL)
+        canvas.create_rectangle(0, 0, data.width, data.height,
+                                fill='white', width=0)
+        redrawAll(canvas, data)
+        canvas.update()
+
+    def mousePressedWrapper(event, canvas, data):
+        mousePressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def keyPressedWrapper(event, canvas, data):
+        keyPressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def timerFiredWrapper(canvas, data):
+        timerFired(data)
+        redrawAllWrapper(canvas, data)
+        # pause, then call timerFired again
+        canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
+    # Set up data and call init
+    class Struct(object): pass
+    data = Struct()
+    data.width = width
+    data.height = height
+    data.timerDelay = 100 # milliseconds
+    init(data)
+    # create the root and the canvas
+    root = Tk()
+    canvas = Canvas(root, width=data.width, height=data.height)
+    canvas.pack()
+    # set up events
+    root.bind("<Button-1>", lambda event:
+                            mousePressedWrapper(event, canvas, data))
+    root.bind("<Key>", lambda event:
+                            keyPressedWrapper(event, canvas, data))
+    timerFiredWrapper(canvas, data)
+    # and launch the app
+    root.mainloop()  # blocks until window is closed
+    print("Good bye!")
+
+run(800, 800)
